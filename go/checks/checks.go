@@ -179,3 +179,9 @@ func CheckMaxPartitionsContributed(label string, maxPartitionsContributed int64)
 	}
 	return nil
 }
+func CheckConfidenceLevel(label string, confidenceLevel float64) error {
+	if confidenceLevel < 0 || confidenceLevel > 1 {
+		return fmt.Errorf("%s: confidenceLevel is %f, should be between 0 and 1", label, confidenceLevel)
+	}
+	return nil
+}

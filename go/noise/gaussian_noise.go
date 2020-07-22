@@ -17,6 +17,7 @@
 package noise
 
 import (
+	"fmt"
 	"math"
 
 	log "github.com/golang/glog"
@@ -281,4 +282,56 @@ func sigmaForGaussian(l0Sensitivity int64, lInfSensitivity, epsilon, delta float
 	}
 
 	return upperBound
+}
+
+func (gaussian) ReturnConfidenceIntervalFloat64(noisedValue float64, l0Sensitivity int64, lInfSensitivity, epsilon, delta,
+	confidenceLevel float64) (*confidenceIntervalFloat64, error) {
+
+	if err := checkArgsConfidenceIntervalGaussian("GaussianNoiseInterval", l0Sensitivity, lInfSensitivity, epsilon, delta,
+		confidenceLevel); err != nil {
+		err = fmt.Errorf("confInt.GaussianNoiseInterval( l0sensitivity %d, lInfSensitivity %f, epsilon %f, delta %e, confidenceLevel %f) checks failed with %v",
+			l0Sensitivity, lInfSensitivity, epsilon, delta, confidenceLevel, err)
+		return nil, err
+	}
+	sigma := sigmaForGaussian(l0Sensitivity, lInfSensitivity, epsilon, delta)
+
+	return getConfidenceIntervalGaussian(noisedValue, confidenceLevel, sigma), nil
+}
+
+func (gaussian) ReturnConfidenceIntervalInt64(noisedValue, l0Sensitivity, lInfSensitivity int64, epsilon, delta,
+	confidenceLevel float64) (*confidenceIntervalInt64, error) {
+	if err := checkArgsConfidenceIntervalGaussian("GaussianNoiseInterval", l0Sensitivity, float64(lInfSensitivity), epsilon, delta,
+		confidenceLevel); err != nil {
+		err := fmt.Errorf("confInt.GaussianNoiseInterval( l0sensitivity %d, lInfSensitivity %d, epsilon %f, delta %e, confidenceLevel %f) checks failed with %v",
+			l0Sensitivity, lInfSensitivity, epsilon, delta, confidenceLevel, err)
+		return nil, err
+	}
+
+	sigma := sigmaForGaussian(l0Sensitivity, float64(lInfSensitivity), epsilon, delta)
+
+	confidenceInterval := getConfidenceIntervalGaussian(float64(noisedValue), confidenceLevel, sigma)
+
+	return &confidenceIntervalInt64{int64(math.Round(confidenceInterval.lowerBound)), int64(math.Round(confidenceInterval.upperBound))}, nil
+
+}
+
+//checking the given arguments
+func checkArgsConfidenceIntervalGaussian(label string, l0Sensitivity int64, lInfSensitivity, epsilon, delta, confidenceLevel float64) error {
+	//returning error in case the confidenceLevel is not between 0 and 1
+	if err := checks.CheckConfidenceLevel(label, confidenceLevel); err != nil {
+		return err
+	}
+	return checkArgsGaussian("GaussianNoiseInterval", l0Sensitivity, lInfSensitivity, epsilon, delta)
+}
+
+func getConfidenceIntervalGaussian(noisedValue float64, confidenceLevel float64, sigma float64) *confidenceIntervalFloat64 {
+	//computing the confidence interval using the inverse error function
+	shiftingValue := sigma * math.Sqrt(2) * float64(math.Erfinv(2.00*confidenceLevel-1))
+
+	FloatlowerBound := noisedValue + shiftingValue
+	FloatupperBound := noisedValue - shiftingValue
+	FloatInterval := confidenceIntervalFloat64{lowerBound: FloatlowerBound,
+		upperBound: FloatupperBound}
+	return &FloatInterval
+
 }
