@@ -17,6 +17,7 @@
 package noise
 
 import (
+	"fmt"
 	"math"
 
 	log "github.com/golang/glog"
@@ -234,10 +235,10 @@ func sigmaForGaussian(l0Sensitivity int64, lInfSensitivity, epsilon, delta float
 	// We use l2Sensitivity as a starting guess for the upper bound since the
 	// required noise grows linearly with sensitivity.
 	l2Sensitivity := lInfSensitivity * math.Sqrt(float64(l0Sensitivity))
-	upperBound := l2Sensitivity
-	var lowerBound float64
+	UpperBound := l2Sensitivity
+	var LowerBound float64
 
-	// Increase upperBound until it is actually an upper bound of σ_tight.
+	// Increase UpperBound until it is actually an upper bound of σ_tight.
 	//
 	// DeltaForGaussian(sigma, l2Sensitivity, epsilon) is a decreasing function with
 	// respect to sigma. This loop terminates in
@@ -245,11 +246,11 @@ func sigmaForGaussian(l0Sensitivity int64, lInfSensitivity, epsilon, delta float
 	//   O(1)                          otherwise.
 	// In the case where σ_tight > l2Sensitivity, when the loop exits, the
 	// following things are true:
-	//   (1) upperBound - lowerBound <= σ_tight
-	//   (2) lowerBound >= 0.5*σ_tight.
-	for deltaForGaussian(upperBound, l0Sensitivity, lInfSensitivity, epsilon) > delta {
-		lowerBound = upperBound
-		upperBound = upperBound * 2
+	//   (1) UpperBound - LowerBound <= σ_tight
+	//   (2) LowerBound >= 0.5*σ_tight.
+	for deltaForGaussian(UpperBound, l0Sensitivity, lInfSensitivity, epsilon) > delta {
+		LowerBound = UpperBound
+		UpperBound = UpperBound * 2
 	}
 
 	// Loop runtime:
@@ -257,8 +258,8 @@ func sigmaForGaussian(l0Sensitivity int64, lInfSensitivity, epsilon, delta float
 	//   O(log(1/gaussianSigmaAccuracy))                  otherwise.
 	//
 	// Proof. First, suppose σ_tight > l2Sensitivity. The prior for-loop guarantees that
-	//   (1) upperBound - lowerBound <= σ_tight
-	//   (2) lowerBound >= 0.5*σ_tight
+	//   (1) UpperBound - LowerBound <= σ_tight
+	//   (2) LowerBound >= 0.5*σ_tight
 	// at the start of this loop.  Using (1), binary search takes
 	// O(log(1/gaussianSigmaAccuracy)) iterations to bound the solution within an interval
 	// of width 0.5*σ_tight*gaussianSigmaAccuracy. Since (2) holds over all iterations of
@@ -266,19 +267,75 @@ func sigmaForGaussian(l0Sensitivity int64, lInfSensitivity, epsilon, delta float
 	//
 	// Now suppose σ_tight <= l2Sensitivity. It takes
 	// O(log(l2Sensitivity/σ_tight)) iterations to calculate a middle that is less
-	// than σ_tight. At that iteration, lowerBound is updated to be at least
-	// 0.5*σ_tight. After this first update to lowerBound, we use the argument of
+	// than σ_tight. At that iteration, LowerBound is updated to be at least
+	// 0.5*σ_tight. After this first update to LowerBound, we use the argument of
 	// the preceding paragraph (noting that (1) and (2) now both hold) to see that
 	// it takes an additional O(log(l2Sensitivity/gaussianSigmaAccuracy)) iterations to
 	// find a sufficiently accurate estimate of σ_tight to exit the loop.
-	for upperBound-lowerBound > gaussianSigmaAccuracy*lowerBound {
-		middle := lowerBound*0.5 + upperBound*0.5
+	for UpperBound-LowerBound > gaussianSigmaAccuracy*LowerBound {
+		middle := LowerBound*0.5 + UpperBound*0.5
 		if deltaForGaussian(middle, l0Sensitivity, lInfSensitivity, epsilon) > delta {
-			lowerBound = middle
+			LowerBound = middle
 		} else {
-			upperBound = middle
+			UpperBound = middle
 		}
 	}
 
-	return upperBound
+	return UpperBound
+}
+
+func (gaussian) ReturnConfidenceIntervalFloat64(noisedValue float64, l0Sensitivity int64, lInfSensitivity, epsilon, delta,
+	confidenceLevel float64) (*ConfidenceIntervalFloat64, error) {
+
+	if err := checkArgsConfidenceIntervalGaussian("GaussianNoiseInterval", l0Sensitivity, lInfSensitivity, epsilon, delta,
+		confidenceLevel); err != nil {
+		err = fmt.Errorf("confInt.GaussianNoiseInterval( l0sensitivity %d, lInfSensitivity %f, epsilon %f, delta %e, confidenceLevel %f) checks failed with %v",
+			l0Sensitivity, lInfSensitivity, epsilon, delta, confidenceLevel, err)
+		return nil, err
+	}
+	sigma := sigmaForGaussian(l0Sensitivity, lInfSensitivity, epsilon, delta)
+
+	return getConfidenceIntervalGaussian(noisedValue, confidenceLevel, sigma), nil
+}
+
+func (gaussian) ReturnConfidenceIntervalInt64(noisedValue, l0Sensitivity, lInfSensitivity int64, epsilon, delta,
+	confidenceLevel float64) (*ConfidenceIntervalInt64, error) {
+	if err := checkArgsConfidenceIntervalGaussian("GaussianNoiseInterval", l0Sensitivity, float64(lInfSensitivity), epsilon, delta,
+		confidenceLevel); err != nil {
+		err := fmt.Errorf("confInt.GaussianNoiseInterval( l0sensitivity %d, lInfSensitivity %d, epsilon %f, delta %e, confidenceLevel %f) checks failed with %v",
+			l0Sensitivity, lInfSensitivity, epsilon, delta, confidenceLevel, err)
+		return nil, err
+	}
+
+	sigma := sigmaForGaussian(l0Sensitivity, float64(lInfSensitivity), epsilon, delta)
+
+	confidenceInterval := getConfidenceIntervalGaussian(float64(noisedValue), confidenceLevel, sigma)
+
+	return &ConfidenceIntervalInt64{int64(math.Round(confidenceInterval.LowerBound)), int64(math.Round(confidenceInterval.UpperBound))}, nil
+
+}
+
+//checking the given arguments
+func checkArgsConfidenceIntervalGaussian(label string, l0Sensitivity int64, lInfSensitivity, epsilon, delta, confidenceLevel float64) error {
+	//returning error in case the confidenceLevel is not between 0 and 1
+	if err := checks.CheckConfidenceLevel(label, confidenceLevel); err != nil {
+		return err
+	}
+	return checkArgsGaussian(label, l0Sensitivity, lInfSensitivity, epsilon, delta)
+}
+
+func getConfidenceIntervalGaussian(noisedValue, confidenceLevel, sigma float64) *ConfidenceIntervalFloat64 {
+	//computing the confidence interval using the inverse error function
+	shiftingValue := inverseCDFGaussian(sigma, confidenceLevel)
+	FloatLowerBound := noisedValue - shiftingValue
+	FloatUpperBound := noisedValue + shiftingValue
+	FloatInterval := ConfidenceIntervalFloat64{LowerBound: FloatLowerBound,
+		UpperBound: FloatUpperBound}
+	return &FloatInterval
+
+}
+
+func inverseCDFGaussian(sigma, confidenceLevel float64) float64 {
+	return sigma * math.Sqrt(2) * math.Erfinv(2.00*confidenceLevel-1)
+
 }
