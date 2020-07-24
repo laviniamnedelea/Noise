@@ -178,9 +178,6 @@ func CheckMaxPartitionsContributed(label string, maxPartitionsContributed int64)
 		return fmt.Errorf("%s: MaxPartitionsContributed is %d, should not be negative", label, maxPartitionsContributed)
 	}
 	return nil
-<<<<<<< Updated upstream
-}
-=======
 }
 
 //CheckConfidenceLevel returns an error if the supplied confidence level is not between 0 and 1
@@ -190,4 +187,3 @@ func CheckConfidenceLevel(label string, confidenceLevel float64) error {
 	}
 	return nil
 }
->>>>>>> Stashed changes
