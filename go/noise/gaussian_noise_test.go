@@ -646,8 +646,8 @@ func TestReturnConfidenceIntervalInt64(t *testing.T) {
 			lInfSensitivity: 15,
 			epsilon:         0.5,
 			delta:           0.9,
-			confidenceLevel: 1.2,                            //The confidence level is bigger than 1, so it should return error
-			want:            ConfidenceIntervalInt64{-4, 6}, //Random values, as test should return error because of the confidence level
+			confidenceLevel: 1.2,                            //The confidence level should not be bigger than 1
+			want:            ConfidenceIntervalInt64{-4, 6}, //Random values; test should return error
 			wantErr:         true,
 		},
 		{
@@ -657,14 +657,14 @@ func TestReturnConfidenceIntervalInt64(t *testing.T) {
 			lInfSensitivity: 15,
 			epsilon:         0.5,
 			delta:           0.9,
-			confidenceLevel: -5, //The confidence level is smaller than 0, so it should return error
+			confidenceLevel: -5, //The confidence level should not be smaller than 0
 			want:            ConfidenceIntervalInt64{-4, 6},
 			wantErr:         true,
 		},
 		{
 			desc:            "Testing negative l0Sensitivity",
 			noisedValue:     1,
-			l0Sensitivity:   -1, //The test should return an error if l0Sensitivity is not strictly positive
+			l0Sensitivity:   -1, //l0Sensitivity should be strictly positive
 			lInfSensitivity: 15,
 			epsilon:         0.5,
 			delta:           0.9,
@@ -675,7 +675,7 @@ func TestReturnConfidenceIntervalInt64(t *testing.T) {
 		{
 			desc:            "Testing zero l0Sensitivity",
 			noisedValue:     1,
-			l0Sensitivity:   0, //The test should return an error if l0Sensitivity is not strictly positive
+			l0Sensitivity:   0, //l0Sensitivity should be strictly positive
 			lInfSensitivity: 15,
 			epsilon:         0.5,
 			delta:           0.9,
@@ -723,6 +723,28 @@ func TestReturnConfidenceIntervalInt64(t *testing.T) {
 			lInfSensitivity: 5,
 			epsilon:         0.05,
 			delta:           10, //delta should be strictly positive and smaller than 1
+			confidenceLevel: 0.2,
+			want:            ConfidenceIntervalInt64{-4, 6},
+			wantErr:         true,
+		},
+		{
+			desc:            "Testing negative dela",
+			noisedValue:     1,
+			l0Sensitivity:   4,
+			lInfSensitivity: int64(math.Inf(1)), //lInfSensitivity should not be infinite
+			epsilon:         0.05,
+			delta:           -0.9,
+			confidenceLevel: 0.2,
+			want:            ConfidenceIntervalInt64{-4, 6},
+			wantErr:         true,
+		},
+		{
+			desc:            "Testing bigger than 1 delta",
+			noisedValue:     1,
+			l0Sensitivity:   4,
+			lInfSensitivity: 5,
+			epsilon:         math.Inf(1), //epsilon should not be infinite
+			delta:           10,
 			confidenceLevel: 0.2,
 			want:            ConfidenceIntervalInt64{-4, 6},
 			wantErr:         true,
@@ -785,8 +807,8 @@ func TestReturnConfidenceIntervalFloat64(t *testing.T) {
 			lInfSensitivity: 15,
 			epsilon:         0.5,
 			delta:           0.9,
-			confidenceLevel: 1.2,                              //The confidence level is bigger than 1, so it should return error
-			want:            ConfidenceIntervalFloat64{-4, 6}, //Random values, as test should return error because of the confidence level
+			confidenceLevel: 1.2,                              //The confidence level should not be smaller than 0
+			want:            ConfidenceIntervalFloat64{-4, 6}, //Random values; test should return error
 			wantErr:         true,
 		},
 		{
@@ -796,30 +818,30 @@ func TestReturnConfidenceIntervalFloat64(t *testing.T) {
 			lInfSensitivity: 15,
 			epsilon:         0.5,
 			delta:           0.9,
-			confidenceLevel: -5,                               //The confidence level is smaller than 0, so it should return error
+			confidenceLevel: -5,                               //The confidence level should not be smaller than 0
 			want:            ConfidenceIntervalFloat64{-4, 6}, //Random values
 			wantErr:         true,
 		},
 		{
 			desc:            "Testing negative l0Sensitivity",
 			noisedValue:     1,
-			l0Sensitivity:   -1, //The test should return an error if l0Sensitivity is not strictly positive
+			l0Sensitivity:   -1, //l0Sensitivity should be strictly positive
 			lInfSensitivity: 15,
 			epsilon:         0.5,
 			delta:           0.9,
 			confidenceLevel: 0.2,
-			want:            ConfidenceIntervalFloat64{-4, 6}, //Random values
+			want:            ConfidenceIntervalFloat64{-4, 6},
 			wantErr:         true,
 		},
 		{
 			desc:            "Testing zero l0Sensitivity",
 			noisedValue:     1,
-			l0Sensitivity:   0, //The test should return an error if l0Sensitivity is not strictly positive
+			l0Sensitivity:   0, //l0Sensitivity should be strictly positive
 			lInfSensitivity: 15,
 			epsilon:         0.5,
 			delta:           0.9,
 			confidenceLevel: 0.2,
-			want:            ConfidenceIntervalFloat64{-4, 6}, //Random values
+			want:            ConfidenceIntervalFloat64{-4, 6},
 			wantErr:         true,
 		},
 		{
@@ -830,7 +852,7 @@ func TestReturnConfidenceIntervalFloat64(t *testing.T) {
 			epsilon:         0.5,
 			delta:           0.9,
 			confidenceLevel: 0.2,
-			want:            ConfidenceIntervalFloat64{-4, 6}, //Random values
+			want:            ConfidenceIntervalFloat64{-4, 6},
 			wantErr:         true,
 		},
 		{
@@ -867,22 +889,23 @@ func TestReturnConfidenceIntervalFloat64(t *testing.T) {
 			wantErr:         true,
 		},
 		{
-			desc:            "Testing infinite lInfSensitivity",
+			desc:            "Testing bigger than 1 delta",
 			noisedValue:     1,
 			l0Sensitivity:   4,
-			lInfSensitivity: math.Inf(1), //lInfSensitivity shouldn't be infinite
+			lInfSensitivity: math.Inf(1), //lInfSensitivity should not be Infinite
 			epsilon:         0.05,
-			delta:           0.3,
+			delta:           0.1,
 			confidenceLevel: 0.2,
 			want:            ConfidenceIntervalFloat64{-4, 6}, //Random values
 			wantErr:         true,
-		}, {
-			desc:            "Testing infinte epsilon",
+		},
+		{
+			desc:            "Testing bigger than 1 delta",
 			noisedValue:     1,
 			l0Sensitivity:   4,
-			lInfSensitivity: 5,
-			epsilon:         math.Inf(1), //epsilon shouldn't be infinite
-			delta:           0.4,
+			lInfSensitivity: 0.5,
+			epsilon:         math.Inf(1), //epsilon should not be infinite
+			delta:           0.1,
 			confidenceLevel: 0.2,
 			want:            ConfidenceIntervalFloat64{-4, 6}, //Random values
 			wantErr:         true,
