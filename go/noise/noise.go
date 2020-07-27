@@ -69,22 +69,10 @@ type ConfidenceIntervalFloat64 struct {
 	LowerBound, UpperBound float64
 }
 
-// NewConfidenceIntervalFloat64 constructor that returns ConfidenceIntervalFloat64 struct with the given
-// float64 lower and upper bounds.
-func NewConfidenceIntervalFloat64(l, u float64) *ConfidenceIntervalFloat64 {
-	return &ConfidenceIntervalFloat64{LowerBound: l, UpperBound: u}
-}
-
-// NewConfidenceIntervalInt64 constructor that returns NewConfidenceIntervalInt64 struct with the given
-// int64 lower and upper bounds.
-func NewConfidenceIntervalInt64(l, u int64) *ConfidenceIntervalInt64 {
-	return &ConfidenceIntervalInt64{LowerBound: l, UpperBound: u}
-}
-
 // toConfidenceIntervalInt64 returns ConfidenceIntervalInt64 struct after rounding the upper
 // lower bounds of the ConfidenceIntervalFloat64 struct.
-func (confInt *ConfidenceIntervalFloat64) toConfidenceIntervalInt64() *ConfidenceIntervalInt64 {
-	return &ConfidenceIntervalInt64{int64(math.Round(confInt.LowerBound)), int64(math.Round(confInt.UpperBound))}
+func (confInt ConfidenceIntervalFloat64) toConfidenceIntervalInt64() ConfidenceIntervalInt64 {
+	return ConfidenceIntervalInt64{int64(math.Round(confInt.LowerBound)), int64(math.Round(confInt.UpperBound))}
 }
 
 // Noise is an interface for primitives that add noise to data to make it differentially private.
