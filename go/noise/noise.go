@@ -70,7 +70,7 @@ type ConfidenceIntervalFloat64 struct {
 }
 
 // toConfidenceIntervalInt64 returns ConfidenceIntervalInt64 struct after rounding the upper
-// lower bounds of the ConfidenceIntervalFloat64 struct.
+// and lower bounds of the ConfidenceIntervalFloat64 struct.
 func (confInt ConfidenceIntervalFloat64) toConfidenceIntervalInt64() ConfidenceIntervalInt64 {
 	return ConfidenceIntervalInt64{int64(math.Round(confInt.LowerBound)), int64(math.Round(confInt.UpperBound))}
 }
