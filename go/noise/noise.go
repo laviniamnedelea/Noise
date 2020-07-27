@@ -134,10 +134,10 @@ type Noise interface {
 	// ReturnConfidenceIntervalInt64 will return a pointer to the ConfidenceIntervalInt64 structure using the int64 noisedValue,
 	// with the confidenceLevel given, and the l0Sensitivity, lInfSensitivity int64 and epsilon, delta float64 for the distribution.
 	ReturnConfidenceIntervalInt64(noisedValue, l0Sensitivity, lInfSensitivity int64, epsilon, delta,
-		confidenceLevel float64) (*ConfidenceIntervalInt64, error)
+		confidenceLevel float64) (ConfidenceIntervalInt64, error)
 
 	// ReturnConfidenceIntervalFloat64 will return a pointer to the ConfidenceIntervalFloat64 structure using the float64 noisedValue,
 	// with the confidenceLevel given, and the l0Sensitivity int64 and lInfSensitivity, epsilon, delta float64 for the distribution.
 	ReturnConfidenceIntervalFloat64(noisedValue float64, l0Sensitivity int64, lInfSensitivity, epsilon, delta,
-		confidenceLevel float64) (*ConfidenceIntervalFloat64, error)
+		confidenceLevel float64) (ConfidenceIntervalFloat64, error)
 }
